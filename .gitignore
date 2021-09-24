@@ -14,6 +14,7 @@ resources/decomposition_cache
 resources/IKEA
 resources/pix3d
 resources/front_3D/3D_front_mapping_generated.csv
+resources/haven
 external/vhacd
 *.blend1
 .vscode
@@ -25,3 +26,4 @@ docs/source/*rst
 docs/source/images/
 docs/source/examples/
 docs/source/*md
+resources/haven/hdris/adams_place_bridge/adams_place_bridge_2k.hdr
