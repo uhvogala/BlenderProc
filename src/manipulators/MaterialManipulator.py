@@ -419,6 +419,8 @@ class MaterialManipulator(Module):
                     MaterialManipulator._infuse_material(material, value)
                 elif key_copy == "add_dust" and requested_cf:
                     self._add_dust_to_material(material, value)
+                elif key_copy == "use_glass_material":
+                    MaterialManipulator._use_glass_material(material, value)
                 elif "set_" in key_copy and requested_cf:
                     # sets the value of the principled shader
                     self._op_principled_shader_value(material, key_copy[len("set_"):], value, "set")
@@ -462,6 +464,8 @@ class MaterialManipulator(Module):
             elif key == "cf_infuse_material":
                 result = Config(params_conf.get_raw_dict(key))
             elif key == "cf_add_dust":
+                result = params_conf.get_raw_dict(key)
+            elif key == "cf_use_glass_material":
                 result = params_conf.get_raw_dict(key)
             elif "cf_set_" in key or "cf_add_" in key:
                 result = params_conf.get_raw_value(key)
@@ -704,6 +708,46 @@ class MaterialManipulator(Module):
                     material.link(link.from_socket, infuse_node.inputs[input_offset])
                 material.link(group_node.outputs[mat_output_input.name], infuse_node.inputs[input_offset + 1])
                 material.link(infuse_output, mat_output_input)
+
+    @staticmethod
+    def _use_glass_material(material: Material, value: dict):
+        old_node, output_node = material.get_node_connected_to_the_output_and_unlink_it()
+
+        # Create shader nodes
+        glass_bsdf = material.new_node('ShaderNodeBsdfGlass')
+        glass_bsdf.distribution = 'BECKMANN'
+        glass_bsdf.inputs["Roughness"].default_value = 0.05
+        glass_bsdf.inputs["IOR"].default_value = 1.46
+        glass_bsdf.inputs["Color"].default_value = [1, 1, 1, 1]
+
+        transp_bsdf = material.new_node('ShaderNodeBsdfTransparent')
+        transp_bsdf.inputs["Color"].default_value = [1, 1, 1, 1]
+
+        transl_bsdf = material.new_node('ShaderNodeBsdfTranslucent')
+        transl_bsdf.inputs["Color"].default_value = [1, 1, 1, 1]
+
+        light_path = material.new_node('ShaderNodeLightPath')
+        
+        minimum = material.new_node('ShaderNodeMath')
+        minimum.operation = 'MINIMUM'
+
+        mix1 = material.new_node('ShaderNodeMixShader')
+        mix2 = material.new_node('ShaderNodeMixShader')
+
+        # Link all shader nodes
+        material.link(light_path.outputs['Is Shadow Ray'], minimum.inputs[0])
+        material.link(light_path.outputs['Is Reflection Ray'], minimum.inputs[1])
+        material.link(light_path.outputs['Is Shadow Ray'], mix1.inputs['Fac'])
+
+        material.link(glass_bsdf.outputs['BSDF'], mix1.inputs[1])
+        material.link(transp_bsdf.outputs['BSDF'], mix1.inputs[2])
+
+        material.link(minimum.outputs['Value'], mix2.inputs['Fac'])
+        material.link(mix1.outputs['Shader'], mix2.inputs[1])
+        material.link(transl_bsdf.outputs['BSDF'], mix2.inputs[2])
+
+        material.link(mix2.outputs['Shader'], output_node.inputs['Surface'])
+
 
     def _add_dust_to_material(self, material: Material, value: dict):
         """
