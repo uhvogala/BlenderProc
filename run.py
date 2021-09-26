@@ -83,7 +83,7 @@ if custom_blender_path is None:
         blender_path = os.path.join(blender_install_path, "Blender.app")
     elif platform == "win32":
         blender_version += "-windows-x64"
-        blender_path = os.path.join(blender_install_path, blender_version)
+        blender_path = os.path.join(blender_install_path, "blender-windows64", 'blender.exe')
     else:
         raise Exception("This system is not supported yet: {}".format(platform))
 
@@ -154,7 +154,7 @@ if custom_blender_path is None:
             subprocess.Popen(["rm {}".format(os.path.join(blender_install_path, blender_version + ".dmg"))], shell=True).wait()
             # add Blender.app path to it
         elif platform == "win32":
-            SetupUtility.extract_file(file_tmp, blender_install_path)
+            SetupUtility.extract_file(blender_install_path, file_tmp)
         # rename the blender folder to better fit our existing scheme
         for folder in os.listdir(blender_install_path):
             if os.path.isdir(os.path.join(blender_install_path, folder)) and folder.startswith("blender-" + major_version):
@@ -209,7 +209,7 @@ temp_dir = os.path.join(temp_dir, "blender_proc_" + str(uuid.uuid4().hex))
 print("Using temporary directory: " + temp_dir)
 if not os.path.exists(temp_dir):
     os.makedirs(temp_dir)
-
+    
 if args.debug:
     p = subprocess.Popen([blender_run_path, "--python-use-system-env", "--python-exit-code", "0", "--python", "src/debug_startup.py", "--", path_src_run if not is_config else args.file, temp_dir] + args.args, env=dict(os.environ, PYTHONPATH=os.getcwd(), PYTHONNOUSERSITE="1"), cwd=repo_root_directory)
 else:
