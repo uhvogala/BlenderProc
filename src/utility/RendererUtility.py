@@ -132,6 +132,8 @@ class RendererUtility:
         if volume_bounces is not None:
             bpy.context.scene.cycles.volume_bounces = volume_bounces
 
+        bpy.context.scene.cycles.sample_clamp_indirect = 1.7
+
 
     @staticmethod
     def toggle_auto_tile_size(enable: bool):
